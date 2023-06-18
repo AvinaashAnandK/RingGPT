@@ -39,3 +39,9 @@ class DataLoader:
 
         else:
             raise ValueError("File argument should either be a file path or a Python list.")
+        
+    def get_data(self):
+        return self.dataframe
+        
+    def get_data_column_name(self):
+        return self.data_column_name

@@ -84,3 +84,12 @@ class Prompt:
                     self.instruction_prompt += f"{category}: {self.entity.get(category, 'N/A')}\n"
             else:
                 self.instruction_prompt += "\n".join(instruction_categories) + "\n"
+
+    def get_instruction_prompt(self):
+        return self.instruction_prompt
+    
+    def get_example(self):
+        return self.example
+    
+    def get_instruction_categories(self):
+        return self.instruction_categories

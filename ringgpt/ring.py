@@ -11,14 +11,18 @@ from rich import print
 import random
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import tiktoken
-from dataloader import DataLoader
-from prompt import Prompt
+from .dataloader import DataLoader
+from .prompt import Prompt
 
 class Ring:
-    def __init__(self, dataframe, llm_list, max_attempts=5, retry_delay=5, throttle_delay=5, log_enabled=True, wip_save=True):
+    def __init__(self, llm_list, max_attempts=5, retry_delay=5, throttle_delay=5, log_enabled=True, wip_save=True, prompt=None, data_loader = None):
         # Validate the llm_list
         if not llm_list:
             raise ValueError("Failed initializing Ring, llm_list is not declared by the user")
+        if not prompt:
+            raise ValueError("Failed initializing Ring, prompt is not declared by the user")
+        if not data_loader:
+            raise ValueError("Failed initializing Ring, data_loader is not declared by the user")
         if not isinstance(llm_list, list) or not all(isinstance(llm, dict) for llm in llm_list):
             raise ValueError("""Failed initializing Ring, llm_list does not align with the expected format. Please pass llm_list in the format:
                 [{"service": "OpenAIChat", 
@@ -34,13 +38,21 @@ class Ring:
             if llm['service'] in ["OpenAIChat", "BardChat"] and (not llm.get('access_token')):
                 raise ValueError("Failed initializing Ring, access_token attribute is not declared by the user in the dictionaries passed in llm_list for OpenAIChat or BardChat")
         
+        self.data_loader = data_loader
+        data_loader.load_data()
+        
+        self.prompt = prompt
+        
         self.llm_list = llm_list
+        
         self.max_attempts = max_attempts
         self.retry_delay = retry_delay
         self.throttle_delay = throttle_delay
         self.log_enabled = log_enabled
         self.wip_save = wip_save
-        self.output_dataframe = None
+
+        self.output_dataframe = self.data_loader.get_data()
+        
 
         # Set up logging
         if self.log_enabled:
@@ -49,6 +61,7 @@ class Ring:
             logging.info("Ring initialized")
 
         self.llm_iterator = cycle(llm_list)
+        
         self.text_chunker = RecursiveCharacterTextSplitter(
             chunk_size=350,
             chunk_overlap=20,
@@ -56,6 +69,21 @@ class Ring:
             separators=['\n\n', '\n', ' ', '']
         )
         self.tokenizer = tiktoken.get_encoding('cl100k_base')
+
+        self.instruction_prompt = self.prompt.get_instruction_prompt() + self.example_picker(self.prompt.get_examples())
+
+        self.data_column_name = self.data_loader.get_data_column_name()
+        self.process_data(data_column_name=self.data_column_name) 
+
+        self.instruction_categories = self.prompt.get_instruction_categories()
+
+    def instruction_categories_picker(self, instruction_categories):
+        if len(instruction_categories) == 1:
+            return instruction_categories[0]
+        elif len(instruction_categories) > 1:
+            return random.sample(instruction_categories, 2)
+        else:
+            return None
 
     def example_picker(self, example):
         if not example:
@@ -161,3 +189,61 @@ class Ring:
                 "response_clean": "Error"
             }
             return response_raw
+        
+    async def run(self):
+        for i, row in self.dataframe.iterrows():
+            text = row['text_final']
+            if self.data_column_name:
+                prompt = self.instruction_prompt + row[self.data_column_name]
+            else:
+                prompt = self.instruction_prompt + row[0]
+
+            check_1, check_2 = self.instruction_categories_picker(self.instruction_categories)
+            
+            logging.info(f"Row {i} to be parsed")
+
+            for attempt in range(self.max_attempts):
+                token = next(self.llm_iterator)
+
+            try:
+                if token['service'] == "EdgeChat":
+                    response = await self.EdgeChat(prompt, token['access_token'])
+                elif token['service'] == "OpenAIChat":
+                    response = self.OpenAIChat(prompt, token['access_token'])
+                elif token['service'] == "BardChat":
+                    response = self.BardChat(prompt, token['access_token'])
+
+
+                # Check response status code and handle accordingly
+                if check_1 in response['response_clean'].lower() and check_2 in response['response_clean'].lower():
+                    # Process the response if everything's OK
+                    logging.info(f"Response received for row: {i} - from: {response['service']}")
+
+                    # Extract values from the response dictionary
+                    service = response['service']
+                    response_val = response['response']
+                    response_clean = response['response_clean']
+
+                    # Store values in the DataFrame
+                    self.output_dataframe.loc[i, 'service'] = str(service)
+                    self.output_dataframe.loc[i, 'response'] = str(response_val)
+                    self.output_dataframe.loc[i, 'response_clean'] = str(response_clean)
+
+                    # Stop the retry loop if the request was successful
+                    break
+                else:
+                    # Handle different status codes and possibly use a different API key if the limit is reached
+                    logging.warning(f"Request failed for row: {i} - from: {response['service']}. Attempt {attempt + 1} of {max_attempts}")
+                    # Wait before the next retry
+                    time.sleep(self.retry_delay)
+            except requests.exceptions.RequestException as e:
+                logging.error(f"Exception occurred with error: {e}")
+                # Wait before the next retry
+                time.sleep(self.retry_delay)
+
+        # Throttle requests by waiting after each one
+        if self.wip_save:
+            self.output_dataframe.dropna(subset=['service', 'response', 'response_clean'], inplace=True)
+            self.output_dataframe.to_csv("output.csv", index=False)
+
+        time.sleep(self.throttle_delay)
