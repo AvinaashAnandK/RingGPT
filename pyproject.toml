@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ringgpt"
-version = "0.1.11"
+version = "0.1.12"
 description = "Package enables users to iterate on a corpus to perform single shot completion tasks leveraging GPT-3.5, Bard and Bing Chat"
 authors = ["Avinaash Anand K <avinaash96@gmail.com>"]
 license = "Apache-2.0"
