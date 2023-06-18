@@ -235,7 +235,7 @@ class Ring:
                     break
                 else:
                     # Handle different status codes and possibly use a different API key if the limit is reached
-                    logging.warning(f"Request failed for row: {i} - from: {response['service']}. Attempt {attempt + 1} of {max_attempts}")
+                    logging.warning(f"Request failed for row: {i} - from: {response['service']}. Attempt {attempt + 1} of {self.max_attempts}")
                     # Wait before the next retry
                     time.sleep(self.retry_delay)
             except requests.exceptions.RequestException as e:
