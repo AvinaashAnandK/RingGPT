@@ -23,26 +23,26 @@ class Prompt:
     }
 
     instructions = {
-        Instruction.UNSTRUCTURED_TO_STRUCTURED: {
+        Instruction.UNSTRUCTURED_TO_STRUCTURED.value: {
             'prompt': '### INSTRUCTION ### Extract the below attributes based on the text in context below. Follow additional instructions when available for an attribute, mentioned after the colon. Use only "N/A" wherever the value for an attribute is unavailable in the context below.',
             'expected_output': '### DESIRED FORMAT OF OUTPUT ### \n<attribute_name>: <extracted_value>'
         },
-        Instruction.SUMMARISE: {
+        Instruction.SUMMARISE.value: {
             'prompt': '### INSTRUCTION ### I want you to act as an AI summariser. I will give you context, and you will provide a summary of that context. Your summary should be informative and factual, covering the most important aspects of the context.',
             'expected_output': '### DESIRED FORMAT OF OUTPUT ### \n<summary_text>'
         },
-        Instruction.CLASSIFICATION: {
+        Instruction.CLASSIFICATION.value: {
             'prompt': '### INSTRUCTION ### Classify the text in context below into one of the following categories. The output should be all applicable categories from the list below.',
             'expected_output': '### DESIRED FORMAT OF OUTPUT ### \n<comma_separated_list_of_category_names>'
         },
-        Instruction.NAMED_ENTITY_RECOGNITION: {
+        Instruction.NAMED_ENTITY_RECOGNITION.value: {
             'prompt': '### INSTRUCTION ### Classify the text in context below into one of the following categories. A substring of the input context can only belong to one of the categories from the list below.',
             'expected_output': '### DESIRED FORMAT OF OUTPUT ### \n<category_name>: <comma_separated_list_of_substrings_from_text>'
         }
     }
 
     def __init__(self, instruction, instruction_categories=None, example=None):
-        if instruction not in [Instruction.UNSTRUCTURED_TO_STRUCTURED, Instruction.CLASSIFICATION, Instruction.NAMED_ENTITY_RECOGNITION,Instruction.SUMMARISE]:
+        if instruction not in [Instruction.UNSTRUCTURED_TO_STRUCTURED.value, Instruction.CLASSIFICATION.value, Instruction.NAMED_ENTITY_RECOGNITION.value,Instruction.SUMMARISE.value]:
             raise ValueError("""Instruction not recognised. Ring can only take the following instructions:
             1. Unstructured to structured
             2. Summarise
@@ -53,10 +53,10 @@ class Prompt:
             if not isinstance(instruction_categories, list) or not all(isinstance(cat, str) for cat in instruction_categories):
                 raise ValueError("Instruction categories must be a list of strings.")
 
-        if instruction in [Instruction.UNSTRUCTURED_TO_STRUCTURED, Instruction.CLASSIFICATION, Instruction.NAMED_ENTITY_RECOGNITION] and not instruction_categories:
+        if instruction in [Instruction.UNSTRUCTURED_TO_STRUCTURED.value, Instruction.CLASSIFICATION.value, Instruction.NAMED_ENTITY_RECOGNITION.value] and not instruction_categories:
             raise ValueError(f"Instruction categories is mandatory for '{instruction.value}' instruction.")
 
-        if instruction == Instruction.NAMED_ENTITY_RECOGNITION and instruction_categories:
+        if instruction == Instruction.NAMED_ENTITY_RECOGNITION.value and instruction_categories:
             unique_entity_names = set(self.entity.keys())
             if not set(instruction_categories).issubset(unique_entity_names):
                 raise ValueError(f"Instruction categories can only have values from the list of unique entity names for '{instruction.value}' task.")
@@ -77,9 +77,9 @@ class Prompt:
         else:
             self.instruction_prompt = self.instructions[instruction]['prompt']
         
-        if instruction in [Instruction.UNSTRUCTURED_TO_STRUCTURED, Instruction.CLASSIFICATION, Instruction.NAMED_ENTITY_RECOGNITION]:
+        if instruction in [Instruction.UNSTRUCTURED_TO_STRUCTURED.value, Instruction.CLASSIFICATION.value, Instruction.NAMED_ENTITY_RECOGNITION.value]:
             self.instruction_prompt += "\n### CATEGORIES ###\n"
-            if instruction == Instruction.NAMED_ENTITY_RECOGNITION:
+            if instruction == Instruction.NAMED_ENTITY_RECOGNITION.value:
                 for category in instruction_categories:
                     self.instruction_prompt += f"{category}: {self.entity.get(category, 'N/A')}\n"
             else:

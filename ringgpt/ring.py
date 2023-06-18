@@ -62,15 +62,9 @@ class Ring:
 
         self.llm_iterator = cycle(llm_list)
         
-        self.text_chunker = RecursiveCharacterTextSplitter(
-            chunk_size=350,
-            chunk_overlap=20,
-            length_function=self.tokenizer_len,
-            separators=['\n\n', '\n', ' ', '']
-        )
         self.tokenizer = tiktoken.get_encoding('cl100k_base')
 
-        self.instruction_prompt = self.prompt.get_instruction_prompt() + self.example_picker(self.prompt.get_examples())
+        self.instruction_prompt = self.prompt.get_instruction_prompt() + self.example_picker(self.prompt.get_example())
 
         self.data_column_name = self.data_loader.get_data_column_name()
         self.process_data(data_column_name=self.data_column_name) 
@@ -117,7 +111,15 @@ class Ring:
     def process_data(self, data_column_name=None):
         prompt_length = self.tokenizer_len(self.instruction_prompt)
         chunk_size = 2000 - prompt_length
-        self.output_dataframe['chunk'] = self.output_dataframe[data_column_name].apply(lambda x: self.text_chunker.split_text(x, chunk_size, 20))
+
+        self.text_chunker = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=20,
+        length_function=self.tokenizer_len,
+        separators=['\n\n', '\n', ' ', '']
+        )
+
+        self.output_dataframe['chunk'] = self.output_dataframe[data_column_name].apply(lambda x: self.text_chunker.split_text(x))
         self.output_dataframe = self.output_dataframe.explode('chunk')
         self.output_dataframe.reset_index(drop=True, inplace=True)
 
@@ -242,8 +244,11 @@ class Ring:
                 time.sleep(self.retry_delay)
 
         # Throttle requests by waiting after each one
-        if self.wip_save:
-            self.output_dataframe.dropna(subset=['service', 'response', 'response_clean'], inplace=True)
-            self.output_dataframe.to_csv("output.csv", index=False)
+            if self.wip_save:
+                self.output_dataframe.dropna(subset=['service', 'response', 'response_clean'], inplace=True)
+                self.output_dataframe.to_csv("output.csv", index=False)
 
-        time.sleep(self.throttle_delay)
+            time.sleep(self.throttle_delay)
+        
+        print("Done!")
+        print(self.output_dataframe)

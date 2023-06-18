@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 class DataLoader:
-    def __init__(self, file, chunking_type='chunk', data_column_name=None):
+    def __init__(self, file, chunking_type='chunk', data_column_name="corpus"):
         self.file = file
         self.chunking_type = chunking_type
         self.data_column_name = data_column_name
@@ -18,7 +18,7 @@ class DataLoader:
 
         # Load data from the file or Python list
         if isinstance(self.file, list):
-            self.dataframe = pd.DataFrame(self.file)
+            self.dataframe = pd.DataFrame(self.file, columns=['corpus'])
         elif isinstance(self.file, str):
             _, file_extension = os.path.splitext(self.file)
             if file_extension not in ['.csv', '.txt']:
@@ -26,7 +26,7 @@ class DataLoader:
 
             if file_extension == '.csv':
                 # Read data from a CSV file
-                if self.data_column_name is None:
+                if self.data_column_name is "corpus":
                     raise ValueError("Data column name is required for .csv files.")
                 self.dataframe = pd.read_csv(self.file)
                 if self.data_column_name is not None and self.dataframe.dtypes[self.data_column_name] != 'object':
@@ -35,7 +35,7 @@ class DataLoader:
                 # Read data from a text file
                 with open(self.file, 'r') as f:
                     content = f.read()
-                self.dataframe = pd.DataFrame([content], columns=[self.data_column_name])
+                self.dataframe = pd.DataFrame([content], columns=['corpus'])
 
         else:
             raise ValueError("File argument should either be a file path or a Python list.")
