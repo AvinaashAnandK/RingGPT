@@ -19,7 +19,7 @@ class DataLoader:
             # Check the file extension
             _, file_extension = os.path.splitext(self.file)
             if file_extension not in ['.csv', '.txt']:
-                raise ValueError("Unsupported raw data format, supported formats are .csv, .txt files and python lists.")
+                raise ValueError("Unsupported raw data format. Supported formats are .csv, .txt files, and Python lists.")
 
             # Load the appropriate file type
             if file_extension == '.csv':
@@ -30,7 +30,7 @@ class DataLoader:
                 self.dataframe = pd.read_csv(self.file, sep='\n', header=None)
 
             # Check the type of the data in the data column
-            if self.dataframe.dtypes[0] != 'object':
+            if self.data_column_name is not None and self.dataframe.dtypes[self.data_column_name] != 'object':
                 raise ValueError("Only strings are supported in the data column.")
         else:
-            raise ValueError("File argument should either be a file path or a python list.")
+            raise ValueError("File argument should either be a file path or a Python list.")
