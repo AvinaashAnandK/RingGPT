@@ -26,9 +26,11 @@ class Ring:
         self.throttle_delay = throttle_delay
         self.log_enabled = log_enabled
         self.wip_save = wip_save
+        self.output_dataframe = None
 
         # Set up logging
         if self.log_enabled:
             logging.basicConfig(filename='ring_log.log', filemode='a', level=logging.INFO, 
                                 format='%(asctime)s - %(levelname)s - %(message)s')
             logging.info("Ring initialised")
+            
