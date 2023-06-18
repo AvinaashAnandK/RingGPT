@@ -1,13 +1,16 @@
 import logging
-import os
-import random
-import pandas as pd
 from itertools import cycle
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-import tiktoken
+import pandas as pd
+from Bard import Chatbot as BardChatbot
+import asyncio
+from EdgeGPT import Chatbot as EdgeChatbot
+from revChatGPT.V1 import Chatbot as RevChatbot
+import requests
+import time
+from rich import print
 
 class Ring:
-    def __init__(self, llm_list, max_attempts=5, retry_delay=5, throttle_delay=5, log_enabled=True, wip_save=True):
+    def __init__(self, dataframe, llm_list, max_attempts=5, retry_delay=5, throttle_delay=5, log_enabled=True, wip_save=True):
         # Validate the llm_list
         if not llm_list:
             raise ValueError("Failed initializing Ring, llm_list is not declared by the user")
@@ -32,7 +35,7 @@ class Ring:
         self.throttle_delay = throttle_delay
         self.log_enabled = log_enabled
         self.wip_save = wip_save
-        self.output_dataframe = None
+        self.output_dataframe = dataframe
 
         # Set up logging
         if self.log_enabled:
@@ -78,32 +81,78 @@ class Ring:
         )
         return len(tokens)
 
-    def process_data(self, file, chunking_type, data_column_name=None):
-        import pandas as pd
-        import os
-
-        if isinstance(file, list):
-            self.dataframe = pd.DataFrame(file)
-        elif isinstance(file, str):
-            _, file_extension = os.path.splitext(file)
-            if file_extension not in ['.csv', '.txt']:
-                raise ValueError("Unsupported raw data format. Supported formats are .csv, .txt files, and Python lists.")
-            if file_extension == '.csv':
-                if data_column_name is None:
-                    data_column_name = 0
-                self.dataframe = pd.read_csv(file, usecols=[data_column_name])
-            elif file_extension == '.txt':
-                self.dataframe = pd.read_csv(file, sep='\n', header=None)
-        else:
-            raise ValueError("File argument should either be a file path or a Python list.")
-
+    def process_data(self, data_column_name=None):
         prompt_length = self.tokenizer_len(self.instruction_prompt)
         chunk_size = 2000 - prompt_length
-        self.dataframe['chunk'] = self.dataframe[data_column_name].apply(lambda x: self.text_chunker.split_text(x, chunk_size, 20))
-        self.dataframe = self.dataframe.explode('chunk')
-        self.dataframe.reset_index(drop=True, inplace=True)
+        self.output_dataframe['chunk'] = self.output_dataframe[data_column_name].apply(lambda x: self.text_chunker.split_text(x, chunk_size, 20))
+        self.output_dataframe = self.output_dataframe.explode('chunk')
+        self.output_dataframe.reset_index(drop=True, inplace=True)
 
         # Repeat other columns for each row
-        self.dataframe = self.dataframe.reindex(self.dataframe.index.repeat(len(self.dataframe.columns) - 1)).reset_index(drop=True)
-        self.dataframe[data_column_name] = self.dataframe['chunk']
-        self.dataframe.drop(columns=['chunk'], inplace=True)
+        self.output_dataframe = self.output_dataframe.reindex(self.output_dataframe.index.repeat(len(self.output_dataframe.columns) - 1)).reset_index(drop=True)
+        self.output_dataframe[data_column_name] = self.output_dataframe['chunk']
+        self.output_dataframe.drop(columns=['chunk'], inplace=True)
+
+    def BardChat(self, prompt, token):
+        logging.info("Function BardChat called")
+        try:
+            chatbot = BardChatbot(token)
+            response = chatbot.ask(prompt)
+            response_raw = {
+                "service": "BardChat",
+                "response": response,
+                "response_clean": response['content']
+            }
+            return response_raw
+        except Exception as e:
+            logging.error(f"Exception occurred with error: {e}")
+            response_raw = {
+                "service": "BardChat",
+                "response": "Error",
+                "response_clean": "Error"
+            }
+            return response_raw
+
+    def OpenAIChat(self, prompt, token):
+        logging.info("Function OpenAIChat called")
+        try:
+            chatbot = RevChatbot(config={"access_token": f"{token}"})
+            for data in chatbot.ask(prompt):
+                response = data
+
+            response_raw = {
+                "service": "OpenAIChat",
+                "response": response,
+                "response_clean": response["message"]
+            }
+
+        except Exception as e:
+            logging.error(f"Exception occurred with error: {e}")
+            response_raw = {
+                "service": "OpenAIChat",
+                "response": "Error",
+                "response_clean": "Error"
+            }
+            return response_raw
+
+        return response_raw
+
+    async def EdgeChat(self, prompt, token):
+        try:
+            logging.info("Function EdgeChat called")
+            chatbot = EdgeChatbot()
+            response = await chatbot.ask(prompt=prompt)
+            response_raw = {
+                "service": "EdgeChat",
+                "response": response,
+                "response_clean": response['item']['messages'][1]['text']
+            }
+            return response_raw
+        except Exception as e:
+            logging.error(f"Exception occurred with error: {e}")
+            response_raw = {
+                "service": "EdgeChat",
+                "response": "Error",
+                "response_clean": "Error"
+            }
+            return response_raw
