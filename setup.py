@@ -6,7 +6,7 @@ setup(
     url='https://github.com/AvinaashAnandK/RingGPT',
     author='Avinaash Anand K',
     author_email='avinaash96@gmail.com',
-    description='Description of my package',
+    description='Package enables users to iterate on a corpus to perform single shot completion tasks leveraging GPT-3.5, Bard and Bing Chat',
     packages=find_packages(),    
     install_requires=[],
 )
