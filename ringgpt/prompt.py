@@ -42,7 +42,7 @@ class Prompt:
     }
 
     def __init__(self, instruction, instruction_categories=None, example=None):
-        if instruction not in Instruction.__members__:
+        if instruction not in [Instruction.UNSTRUCTURED_TO_STRUCTURED, Instruction.CLASSIFICATION, Instruction.NAMED_ENTITY_RECOGNITION,Instruction.SUMMARISE]:
             raise ValueError("""Instruction not recognised. Ring can only take the following instructions:
             1. Unstructured to structured
             2. Summarise
