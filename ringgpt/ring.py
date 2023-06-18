@@ -8,6 +8,11 @@ from revChatGPT.V1 import Chatbot as RevChatbot
 import requests
 import time
 from rich import print
+import random
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import tiktoken
+from dataloader import DataLoader
+from prompt import Prompt
 
 class Ring:
     def __init__(self, dataframe, llm_list, max_attempts=5, retry_delay=5, throttle_delay=5, log_enabled=True, wip_save=True):
@@ -35,7 +40,7 @@ class Ring:
         self.throttle_delay = throttle_delay
         self.log_enabled = log_enabled
         self.wip_save = wip_save
-        self.output_dataframe = dataframe
+        self.output_dataframe = None
 
         # Set up logging
         if self.log_enabled:
