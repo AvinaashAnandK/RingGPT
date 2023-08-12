@@ -1,24 +1,35 @@
-[tool.poetry]
-name = "ringgpt"
-version = "0.1.14"
-description = "Package enables users to iterate on a corpus to perform single shot completion tasks leveraging GPT-3.5, Bard and Bing Chat"
-authors = ["Avinaash Anand K <avinaash96@gmail.com>"]
-license = "Apache-2.0"
-readme = "README.md"
+# RingGPT
 
-[tool.poetry.dependencies]
-python = "^3.9"
-pandas = "^2.0.2"
-GoogleBard = "^1.3.2"
-asyncio = "^3.4.3"
-EdgeGPT = "0.5.0"
-revChatGPT = "^6.3.3"
-requests = "^2.31.0"
-rich = "^13.4.2"
-langchain = "^0.0.203"
-tiktoken = "^0.4.0"
+RingGPT enables users to iterate on a corpus to perform single-shot completion tasks using GPT-3.5, Bard, and Bing Chat. Whether you're looking to summarize text, classify data, or perform named entity recognition, RingGPT has got you covered.
 
+## Key Features:
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+- **Multiple Language Model Support**: Seamlessly interact with models like OpenAIChat, BardChat, and EdgeChat.
+- **Dynamic Prompt Generation**: Craft structured prompts tailored to specific tasks.
+- **Efficient Data Processing**: Load, chunk, and process data for optimal language model interactions.
+- **Error Handling & Retries**: Resilient request handling with built-in retries.
+- **Logging**: Trace RingGPT's actions with detailed logs.
+
+## Supported Zero-Shot Completion Tasks:
+
+1. **Unstructured to Structured**: Extract specific attributes from unstructured text.
+2. **Summarise**: Generate concise summaries of provided text.
+3. **Classification**: Classify text into predefined categories.
+4. **Named Entity Recognition**: Identify and categorize entities within the text.
+
+## Ring's Settings:
+
+- **llm_list**: A list of dictionaries specifying the language models to be used. Each dictionary should contain the service name, access token, and an identifier.
+- **max_attempts**: Maximum number of retries for each request.
+- **retry_delay**: Time (in seconds) to wait between retries.
+- **throttle_delay**: Time (in seconds) to wait between requests.
+- **log_enabled**: Enable or disable logging.
+- **wip_save**: Save the work-in-progress data.
+
+## Installation:
+To get started with RingGPT, ensure you have Python 3.9 or above. Install the package using pip:
+```bash
+pip install ringgpt'''
+
+## Sample Implementation: Named Entity Recognition
+
