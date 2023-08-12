@@ -29,7 +29,7 @@ RingGPT enables users to iterate on a corpus to perform single-shot completion t
 ## Installation:
 To get started with RingGPT, ensure you have Python 3.9 or above. Install the package using pip:
 ```bash
-pip install ringgpt'''
+pip install ringgpt```
 
 ## Sample Implementation: Named Entity Recognition
 
